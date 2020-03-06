@@ -52,7 +52,7 @@ def after_request(response):
 
 @app.route('/')
 def main():
-    return "mrz parser version 0.1"
+    return "mrz parser version 0.1.1"
 
 
 @app.route('/api/passport', methods=['POST'])
