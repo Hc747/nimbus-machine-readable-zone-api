@@ -59,9 +59,4 @@ def main():
 def post_atar():
     content = request.json.get('content')
     parsed_result = parse_mrz(content)
-
-    data = {
-        'result': parsed_result.serialize()
-    }
-
-    return jsonify(data=data)
+    return jsonify(parsed_result.serialize())
