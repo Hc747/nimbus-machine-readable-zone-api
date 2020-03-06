@@ -1,5 +1,5 @@
 import os
-import app
+from app import app
 
 port = os.getenv("PORT")
 debug = os.getenv("DEBUG")
@@ -12,4 +12,4 @@ if __name__ == '__main__':
         threaded=True
     )
 
-    app.server.run(**opts)
+    app.run(**opts)
