@@ -31,8 +31,7 @@ class ParsedResult:
 
 
 def process_text(mrz_str):
-    corrected_str = mrz_str.replace(' ', '')
-    corrected_str = corrected_str[:44] + '\n' + corrected_str[44:]
+    corrected_str = mrz_str[:44] + '\n' + mrz_str[44:]
     return corrected_str
 
 
