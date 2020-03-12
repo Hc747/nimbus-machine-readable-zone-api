@@ -4,6 +4,7 @@ from flask import Flask, jsonify, render_template, request
 # Web services
 app = Flask(__name__)
 
+
 # Prediction class
 class ParsedResult:
     def __init__(self, fields):
@@ -28,13 +29,32 @@ class ParsedResult:
             'expiry_date': self.expiry_date
         }
 
+
 def process_text(mrz_str):
-    corrected_str=mrz_str.replace(' ','')
-    corrected_str=corrected_str[:44]+'\n'+corrected_str[44:]
+    corrected_str = mrz_str.replace(' ', '')
+    corrected_str = corrected_str[:44] + '\n' + corrected_str[44:]
     return corrected_str
 
+
+# TODO: more intelligently identify the start of the MRZ
+def extract_mrz(content):
+    index = -1
+    offset = 0
+
+    try:
+        index = content.index('P<')
+    except:
+        try:
+            index = content.index('P <')
+            offset = 1
+        except:
+            pass
+
+    return content[index - offset:] if index > -1 else content  #TODO: raise exception
+
+
 def parse_mrz(mrz_str):
-    mrz_str=process_text(mrz_str)
+    mrz_str = process_text(mrz_str)
     td3_check = TD3CodeChecker(mrz_str)
     fields = td3_check.fields()
     result = ParsedResult(fields)
@@ -58,5 +78,6 @@ def main():
 @app.route('/api/passport', methods=['POST'])
 def post_atar():
     content = request.json.get('content')
-    parsed_result = parse_mrz(content)
+    mrz = extract_mrz(content)
+    parsed_result = parse_mrz(mrz)
     return jsonify(parsed_result.serialize())
