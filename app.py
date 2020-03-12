@@ -85,24 +85,25 @@ def extract_mrz(content, mrz_size=88):
     output = ""
 
     for char in formatted[offset:]:
-        value = substitutions.get(char, char)
-        if value not in valid:
-            continue
-        output += value
+        # value = substitutions.get(char, char)
+        # if value not in valid:
+        #     continue
+        # output += value
+        output += char
 
-    if mrz_size - len(output) > 0:
-        indices = lcs(output, "<" * mrz_size)
-
-        if indices is None:
-            return output
-
-        start = output[:indices["start"]]
-        end = output[indices["end"]:]
-
-        difference = mrz_size - (len(start) + len(end))
-        padding = "<" * difference if difference > 0 else ""
-
-        return start + padding + end
+    # if mrz_size - len(output) > 0:
+    #     indices = lcs(output, "<" * mrz_size)
+    #
+    #     if indices is None:
+    #         return output
+    #
+    #     start = output[:indices["start"]]
+    #     end = output[indices["end"]:]
+    #
+    #     difference = mrz_size - (len(start) + len(end))
+    #     padding = "<" * difference if difference > 0 else ""
+    #
+    #     return start + padding + end
 
     return output
 
