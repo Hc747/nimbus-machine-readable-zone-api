@@ -35,25 +35,74 @@ def process_text(mrz_str):
     return corrected_str
 
 
-replacements = {
+substitutions = {
     '«': '<',
     'M': 'M'
 }
 
 
-# TODO: more intelligently identify the start of the MRZ
-def extract_mrz(content, mrz_size=88):
-    formatted = ''.join(content.split()).upper()
-    length = len(formatted)
+valid = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890<"
 
-    if length < mrz_size:
-        return content  # TODO: raise exception
+
+def lcs(a, b):
+    a_len, b_len = len(a), len(b)
+
+    answer = {}
+    match = {}
+
+    for x in range(a_len):
+        for y in range(b_len):
+            idx = x + y
+            if (idx < a_len and a[idx] == b[idx]):
+                if "start" not in match:
+                    match["start"] = idx
+
+                value = match.get("value", None)
+                match["value"] = a[idx] if value is None else value + a[idx]
+            else:
+                previous = answer.get("value", None)
+                current = match.get("value", None)
+
+                if (previous is None and current is not None) or (current is not None and len(current) > len(previous)):
+                    match["end"] = idx
+                    answer = match
+                    match = {}
+
+    if len(answer) == 0:
+        return None
+
+    if "start" in answer and "end" not in answer:
+        answer["end"] = a_len
+
+    return answer
+
+
+def extract_mrz(content, mrz_size=88):
+    formatted = ''.join(content.split())
+    length = len(formatted)
+    offset = max(length - mrz_size, 0)
 
     output = ""
 
-    for char in formatted[length - mrz_size:]:
-        value = replacements.get(char, char)
+    for char in formatted[offset:]:
+        value = substitutions.get(char, char)
+        if value not in valid:
+            continue
         output += value
+
+    if mrz_size - len(output) > 0:
+        indices = lcs(output, "<" * mrz_size)
+
+        if indices is None:
+            return output
+
+        start = output[:indices["start"]]
+        end = output[indices["end"]:]
+
+        difference = mrz_size - (len(start) + len(end))
+        padding = "<" * difference if difference > 0 else ""
+
+        return start + padding + end
 
     return output
 
