@@ -38,7 +38,7 @@ def process_text(mrz_str):
 
 # TODO: more intelligently identify the start of the MRZ
 def extract_mrz(content, mrz_size=88):
-    formatted = content.replace(' ', '').replace('«', '<')
+    formatted = ''.join(content.split()).replace('«', '<')
     length = len(formatted)
     result = formatted[length - mrz_size:] if length >= mrz_size else content  #TODO: raise exception
     return result
