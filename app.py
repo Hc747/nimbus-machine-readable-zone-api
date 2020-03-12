@@ -35,12 +35,27 @@ def process_text(mrz_str):
     return corrected_str
 
 
+replacements = {
+    '«': '<',
+    'M': 'M'
+}
+
+
 # TODO: more intelligently identify the start of the MRZ
 def extract_mrz(content, mrz_size=88):
-    formatted = ''.join(content.split()).replace('«', '<')
+    formatted = ''.join(content.split()).upper()
     length = len(formatted)
-    result = formatted[length - mrz_size:].upper() if length >= mrz_size else content  #TODO: raise exception
-    return result
+
+    if length < mrz_size:
+        return content  # TODO: raise exception
+
+    output = ""
+
+    for char in formatted[length - mrz_size:]:
+        value = replacements.get(char, char)
+        output += value
+
+    return output
 
 
 def parse_mrz(mrz_str):
