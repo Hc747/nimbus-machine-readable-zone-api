@@ -1,5 +1,6 @@
 from mrz.checker.td3 import TD3CodeChecker, get_country
 from flask import Flask, jsonify, render_template, request
+from typing import Optional
 
 # Web services
 app = Flask(__name__)
@@ -35,22 +36,22 @@ def process_text(mrz_str):
     return corrected_str
 
 
+alphanumeric = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
+separator = "<"
+valid = alphanumeric + separator
 substitutions = {
     '«': '<',
-    'M': 'M'
+    'M': 'M',
+    'М': 'M'
 }
 
 
-valid = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890<"
-
-
-def lcs(a, b):
+def longest_common_subsection(a: str, b: str) -> Optional[dict]:
     a_len, b_len = len(a), len(b)
-
     answer = {}
-    match = {}
 
     for x in range(a_len):
+        match = {}
         for y in range(b_len):
             idx = x + y
             if (idx < a_len and a[idx] == b[idx]):
@@ -66,7 +67,8 @@ def lcs(a, b):
                 if (previous is None and current is not None) or (current is not None and len(current) > len(previous)):
                     match["end"] = idx
                     answer = match
-                    match = {}
+
+                break
 
     if len(answer) == 0:
         return None
@@ -77,32 +79,76 @@ def lcs(a, b):
     return answer
 
 
-def extract_mrz(content, mrz_size=88):
-    formatted = ''.join(content.split())
-    length = len(formatted)
-    offset = max(length - mrz_size, 0)
+def substitute(value: str, size: int, substitution: str) -> str:
+    if size - len(value) <= 0:
+        return value
 
-    output = ""
+    indices: Optional[dict] = longest_common_subsection(value, substitution * size)
 
-    for char in formatted[offset:]:
-        value = substitutions.get(char, char)
+    if indices is None:
+        return value  # TODO: return none?
+
+    start: str = value[:indices["start"]]
+    end: str = value[indices["end"]:]
+    difference: int = size - (len(start) + len(end))
+    padding: str = substitution * difference if difference > 0 else ""
+
+    return start + padding + end
+
+
+def preprocess_mrz(value: str, size: int, types: str) -> str:
+    length: int = len(value)
+    offset: int = max(length - size, 0)
+
+    output: str = ""
+    subset: str = value[offset:]
+    identified: bool = False
+
+    for index in range(len(subset)):
+        char: str = subset[index]
+        value: str = substitutions.get(char, char)
+
+        if not identified:
+            if value in types:
+                identified = True
+            else:
+                continue
+
         if value not in valid:
             continue
+
         output += value
 
-    if mrz_size - len(output) > 0:
-        indices = lcs(output, "<" * mrz_size)
+    return output
 
-        if indices is None:
-            return output
 
-        start = output[:indices["start"]]
-        end = output[indices["end"]:]
+# TODO: extend to allow for MRZ's with more or less than 2 lines
+def extract_mrz(content: str, mrz_size: int, lines: int, types: str) -> list:
+    chunk_size: int = int(mrz_size / lines)
+    formatted = ''.join(content.split()).upper()
+    preprocessed = preprocess_mrz(formatted, mrz_size, types)
+    processed = substitute(preprocessed, mrz_size, separator)
 
-        difference = mrz_size - (len(start) + len(end))
-        padding = "<" * difference if difference > 0 else ""
+    output: list = []
 
-        return start + padding + end
+    for index in range(lines):
+        start: int = index * chunk_size
+        end: int = start + chunk_size
+        chunk = processed[start:end]
+
+        while len(chunk) > 0:
+            char: str = chunk[0]
+            if char == separator:
+                chunk = chunk[1:]
+            else:
+                break
+
+        if chunk_size - len(chunk) > 0:
+            chunk = substitute(chunk, chunk_size, separator)
+            difference = chunk_size - len(chunk)
+            chunk = (difference * separator) + chunk if difference > 0 else chunk
+
+        output.append(chunk)
 
     return output
 
@@ -131,7 +177,14 @@ def main():
 
 @app.route('/api/passport', methods=['POST'])
 def post_atar():
-    content = request.json.get('content')
-    mrz = extract_mrz(content)
+    content: str = request.json.get('content')
+    types: str = request.json.get('types') if 'types' in request.json else "P"
+    lines: int = request.json.get('lines') if 'lines' in request.json else 2
+    mrz_size: int = request.json.get('mrz_size') if 'mrz_size' in request.json else 88
+
+    mrz_chunks: list = extract_mrz(content, mrz_size=mrz_size, lines=lines, types=types)
+    mrz = ''.join(mrz_chunks)
+
     parsed_result = parse_mrz(mrz)
+
     return jsonify(parsed_result.serialize())
