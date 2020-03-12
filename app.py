@@ -37,20 +37,11 @@ def process_text(mrz_str):
 
 
 # TODO: more intelligently identify the start of the MRZ
-def extract_mrz(content):
-    index = -1
-    offset = 0
-
-    try:
-        index = content.index('P<')
-    except:
-        try:
-            index = content.index('P <')
-            offset = 1
-        except:
-            pass
-
-    return content[index - offset:] if index > -1 else content  #TODO: raise exception
+def extract_mrz(content, mrz_size=88):
+    formatted = content.replace(' ', '')
+    length = len(formatted)
+    result = formatted[length - mrz_size:] if length >= mrz_size else content  #TODO: raise exception
+    return result
 
 
 def parse_mrz(mrz_str):
