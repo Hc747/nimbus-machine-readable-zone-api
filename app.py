@@ -48,21 +48,21 @@ substitutions = {
 
 def longest_common_subsection(a: str, b: str) -> Optional[dict]:
     a_len, b_len = len(a), len(b)
-    answer = {}
+    answer: dict = {}
 
     for x in range(a_len):
-        match = {}
+        match: dict = {}
         for y in range(b_len):
-            idx = x + y
+            idx: int = x + y
             if (idx < a_len and a[idx] == b[idx]):
                 if "start" not in match:
                     match["start"] = idx
 
-                value = match.get("value", None)
+                value: Optional[str] = match.get("value", None)
                 match["value"] = a[idx] if value is None else value + a[idx]
             else:
-                previous = answer.get("value", None)
-                current = match.get("value", None)
+                previous: Optional[str] = answer.get("value", None)
+                current: Optional[str] = match.get("value", None)
 
                 if (previous is None and current is not None) or (current is not None and len(current) > len(previous)):
                     match["end"] = idx
@@ -125,16 +125,16 @@ def preprocess_mrz(value: str, size: int, types: str) -> str:
 # TODO: extend to allow for MRZ's with more or less than 2 lines
 def extract_mrz(content: str, mrz_size: int, lines: int, types: str) -> list:
     chunk_size: int = int(mrz_size / lines)
-    formatted = ''.join(content.split()).upper()
-    preprocessed = preprocess_mrz(formatted, mrz_size, types)
-    processed = substitute(preprocessed, mrz_size, separator)
+    formatted: str = ''.join(content.split()).upper()
+    preprocessed: str = preprocess_mrz(formatted, mrz_size, types)
+    processed: str = substitute(preprocessed, mrz_size, separator)
 
     output: list = []
 
     for index in range(lines):
         start: int = index * chunk_size
         end: int = start + chunk_size
-        chunk = processed[start:end]
+        chunk: str = processed[start:end]
 
         while len(chunk) > 0:
             char: str = chunk[0]
@@ -144,9 +144,9 @@ def extract_mrz(content: str, mrz_size: int, lines: int, types: str) -> list:
                 break
 
         if chunk_size - len(chunk) > 0:
-            chunk = substitute(chunk, chunk_size, separator)
-            difference = chunk_size - len(chunk)
-            chunk = (difference * separator) + chunk if difference > 0 else chunk
+            chunk: str = substitute(chunk, chunk_size, separator)
+            difference: int = chunk_size - len(chunk)
+            chunk: str = (difference * separator) + chunk if difference > 0 else chunk
 
         output.append(chunk)
 
@@ -183,7 +183,7 @@ def post_atar():
     mrz_size: int = request.json.get('mrz_size') if 'mrz_size' in request.json else 88
 
     mrz_chunks: list = extract_mrz(content, mrz_size=mrz_size, lines=lines, types=types)
-    mrz = ''.join(mrz_chunks)
+    mrz: str = ''.join(mrz_chunks)
 
     parsed_result = parse_mrz(mrz)
 
