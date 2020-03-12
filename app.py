@@ -39,7 +39,7 @@ def process_text(mrz_str):
 def extract_mrz(content, mrz_size=88):
     formatted = ''.join(content.split()).replace('«', '<')
     length = len(formatted)
-    result = formatted[length - mrz_size:] if length >= mrz_size else content  #TODO: raise exception
+    result = formatted[length - mrz_size:].upper() if length >= mrz_size else content  #TODO: raise exception
     return result
 
 
