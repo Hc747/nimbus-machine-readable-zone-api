@@ -1,9 +1,33 @@
 from mrz.checker.td3 import TD3CodeChecker, get_country
-from flask import Flask, jsonify, render_template, request
-from typing import Optional
+from flask import Flask, jsonify, request
+from typing import Optional, Union
+import datetime
 
 # Web services
 app = Flask(__name__)
+
+
+def century_from_year(year: int) -> int:
+    return (year - 1) // 100
+
+
+def format_iso_date(date: str) -> str:
+    current_year: int = int(datetime.datetime.now().year)
+    current_century: int = century_from_year(current_year)
+    avg_lifespan: int = 80
+
+    #  TODO: determine if closer to upper or lower bound of century / correctly determine offset value
+
+    offset = 1 if current_year - (current_century * 100) < avg_lifespan else 0
+
+    year: Union[str, int] = int(date[:2])
+    century: int = current_century - offset if abs(100 - year) < year else current_century
+
+    year: str = str(century) + date[:2]
+    month: str = date[2:4]
+    day: str = date[4:]
+
+    return '-'.join([year, month, day])
 
 
 # Prediction class
@@ -25,9 +49,9 @@ class ParsedResult:
             'surname': self.surname,
             'nationality': self.nationality,
             'country': self.country,
-            'birth_date': self.birth_date,
+            'birth_date': format_iso_date(self.birth_date),
             'sex': self.sex,
-            'expiry_date': self.expiry_date
+            'expiry_date': format_iso_date(self.expiry_date)
         }
 
 
@@ -176,7 +200,7 @@ def main():
 
 
 @app.route('/api/passport', methods=['POST'])
-def post_atar():
+def post_mrz():
     content: str = request.json.get('content')
     types: str = request.json.get('types') if 'types' in request.json else "P"
     lines: int = request.json.get('lines') if 'lines' in request.json else 2
