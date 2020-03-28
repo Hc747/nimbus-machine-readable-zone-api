@@ -20,10 +20,15 @@ def format_iso_date(date: str) -> str:
 
     offset = 1 if current_year - (current_century * 100) < avg_lifespan else 0
 
-    year: Union[str, int] = int(date[:2])
-    century: int = current_century - offset if abs(100 - year) < year else current_century
+    year: Union[str, int]
 
-    year: str = str(century) + date[:2]
+    try:
+        year = int(date[:2])
+        century: int = current_century - offset if abs(100 - year) < year else current_century
+        year = str(century) + date[:2]
+    except:
+        year = date[:2]
+
     month: str = date[2:4]
     day: str = date[4:]
 
