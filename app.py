@@ -129,24 +129,39 @@ def preprocess_mrz(value: str, size: int, types: str) -> str:
     length: int = len(value)
     offset: int = max(length - size, 0)
 
-    output: str = ""
-    subset: str = value[offset:]
+    max_attempts: int = 8
     identified: bool = False
+
+    for attempt in range(max_attempts):
+        index: int = offset - attempt
+
+        if index < 0 or identified:
+            break
+
+        subset: str = value[index:]
+
+        for i in range(len(subset)):
+            char: str = subset[i]
+            element: str = substitutions.get(char, char)
+
+            if not identified and element in types:
+                identified = True
+                offset = max(index, 0)
+
+    if not identified:
+        return ""
+
+    subset: str = value[offset:]
+    output: str = ""
 
     for index in range(len(subset)):
         char: str = subset[index]
-        value: str = substitutions.get(char, char)
+        element: str = substitutions.get(char, char)
 
-        if not identified:
-            if value in types:
-                identified = True
-            else:
-                continue
-
-        if value not in valid:
+        if element not in valid:
             continue
 
-        output += value
+        output += element
 
     return output
 
