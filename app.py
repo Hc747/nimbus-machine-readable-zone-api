@@ -42,7 +42,9 @@ class ParsedResult:
         self.name = fields.name
         self.surname = fields.surname
         self.nationality = get_country(fields.nationality)
+        self.nationality_code = fields.nationality
         self.country = get_country(fields.country)
+        self.country_code = fields.country
         self.birth_date = fields.birth_date
         self.sex = fields.sex
         self.expiry_date = fields.expiry_date
@@ -53,7 +55,9 @@ class ParsedResult:
             'name': self.name,
             'surname': self.surname,
             'nationality': self.nationality,
+            'nationality_code': self.nationality_code,
             'country': self.country,
+            'country_code': self.country_code,
             'birth_date': format_iso_date(self.birth_date),
             'sex': self.sex,
             'expiry_date': format_iso_date(self.expiry_date)
