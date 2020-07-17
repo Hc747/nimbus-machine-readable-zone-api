@@ -1,6 +1,6 @@
 from mrz.checker.td3 import TD3CodeChecker, get_country
 from flask import Flask, jsonify, request
-from typing import Optional, Union
+from typing import Optional, Union, List
 import datetime
 
 # Web services
@@ -129,7 +129,13 @@ def substitute(value: str, size: int, substitution: str) -> str:
     return start + padding + end
 
 
-def preprocess_mrz(value: str, size: int, types: str) -> str:
+def replace_all(string: str, dictionary: dict) -> str:
+    for key, value in dictionary.items():
+        string = string.replace(key, value)
+    return string
+
+
+def preprocess_mrz(value: str, size: int, types: List[str]) -> str:
     length: int = len(value)
     offset: int = max(length - size, 0)
 
@@ -145,12 +151,17 @@ def preprocess_mrz(value: str, size: int, types: str) -> str:
         subset: str = value[index:]
 
         for i in range(len(subset)):
-            char: str = subset[i]
-            element: str = substitutions.get(char, char)
+            if identified:
+                break
 
-            if not identified and element in types:
-                identified = True
-                offset = max(index, 0)
+            chars: str = replace_all(subset[i:], substitutions)
+
+            for t in types:
+                if identified:
+                    break
+                if chars.startswith(t):
+                    identified = True
+                    offset = max(index + i, 0)
 
     if not identified:
         return ""
@@ -171,7 +182,7 @@ def preprocess_mrz(value: str, size: int, types: str) -> str:
 
 
 # TODO: extend to allow for MRZ's with more or less than 2 lines
-def extract_mrz(content: str, mrz_size: int, lines: int, types: str) -> list:
+def extract_mrz(content: str, mrz_size: int, lines: int, types: List[str]) -> list:
     chunk_size: int = int(mrz_size / lines)
     formatted: str = ''.join(content.split()).upper()
     preprocessed: str = preprocess_mrz(formatted, mrz_size, types)
@@ -226,7 +237,7 @@ def main():
 @app.route('/api/passport', methods=['POST'])
 def post_mrz():
     content: str = request.json.get('content')
-    types: str = request.json.get('types') if 'types' in request.json else "P"
+    types: List[str] = request.json.get('types') if 'types' in request.json else ["P<", "PA"]
     lines: int = request.json.get('lines') if 'lines' in request.json else 2
     mrz_size: int = request.json.get('mrz_size') if 'mrz_size' in request.json else 88
 
