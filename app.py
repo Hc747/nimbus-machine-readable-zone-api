@@ -7,6 +7,27 @@ import datetime
 app = Flask(__name__)
 
 
+alphanumeric = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
+separator = "<"
+valid = alphanumeric + separator
+transliteration_substitutions = {
+    '«': '<',
+    'く': '<',
+    'M': 'M',
+    'М': 'M'
+}
+alpha_to_numeric_substitutions = {
+    'o': '0',
+    'O': '0',
+}
+
+
+def replace_all(string: str, dictionary: dict) -> str:
+    for key, value in dictionary.items():
+        string = string.replace(key, value)
+    return string
+
+
 def century_from_year(year: int) -> int:
     return (year - 1) // 100
 
@@ -21,16 +42,17 @@ def format_iso_date(date: str) -> str:
     offset = 1 if current_year - (current_century * 100) < avg_lifespan else 0
 
     year: Union[str, int]
+    formatted = replace_all(date, alpha_to_numeric_substitutions)
 
     try:
-        year = int(date[:2])
+        year = int(formatted[:2])
         century: int = current_century - offset if abs(100 - year) < year else current_century
-        year = str(century) + date[:2]
+        year = str(century) + formatted[:2]
     except:
-        year = date[:2]
+        year = formatted[:2]
 
-    month: str = date[2:4]
-    day: str = date[4:]
+    month: str = formatted[2:4]
+    day: str = formatted[4:]
 
     return '-'.join([year, month, day])
 
@@ -67,17 +89,6 @@ class ParsedResult:
 def process_text(mrz_str):
     corrected_str = mrz_str[:44] + '\n' + mrz_str[44:]
     return corrected_str
-
-
-alphanumeric = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
-separator = "<"
-valid = alphanumeric + separator
-substitutions = {
-    '«': '<',
-    'く': '<',
-    'M': 'M',
-    'М': 'M'
-}
 
 
 def longest_common_subsection(a: str, b: str) -> Optional[dict]:
@@ -130,12 +141,6 @@ def substitute(value: str, size: int, substitution: str) -> str:
     return start + padding + end
 
 
-def replace_all(string: str, dictionary: dict) -> str:
-    for key, value in dictionary.items():
-        string = string.replace(key, value)
-    return string
-
-
 def preprocess_mrz(value: str, size: int, types: List[str]) -> str:
     length: int = len(value)
     offset: int = max(length - size, 0)
@@ -155,7 +160,7 @@ def preprocess_mrz(value: str, size: int, types: List[str]) -> str:
             if identified:
                 break
 
-            chars: str = replace_all(subset[i:], substitutions)
+            chars: str = replace_all(subset[i:], transliteration_substitutions)
 
             for t in types:
                 if identified:
@@ -172,7 +177,7 @@ def preprocess_mrz(value: str, size: int, types: List[str]) -> str:
 
     for index in range(len(subset)):
         char: str = subset[index]
-        element: str = substitutions.get(char, char)
+        element: str = transliteration_substitutions.get(char, char)
 
         if element not in valid:
             continue
