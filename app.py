@@ -74,6 +74,7 @@ separator = "<"
 valid = alphanumeric + separator
 substitutions = {
     '«': '<',
+    'く': '<',
     'M': 'M',
     'М': 'M'
 }
