@@ -239,16 +239,19 @@ def main():
     return "MRZ parser version 1.0"
 
 
+default_document_types: List[str] = ["P<", "PA"]
+default_line_count: int = 2
+default_mrz_size: int = 88
+
+
 @app.route('/api/passport', methods=['POST'])
 def post_mrz():
     content: str = request.json.get('content')
-    types: List[str] = request.json.get('types') if 'types' in request.json else ["P<", "PA"]
-    lines: int = request.json.get('lines') if 'lines' in request.json else 2
-    mrz_size: int = request.json.get('mrz_size') if 'mrz_size' in request.json else 88
+    types: List[str] = request.json.get('types') if 'types' in request.json else default_document_types
+    lines: int = request.json.get('lines') if 'lines' in request.json else default_line_count
+    mrz_size: int = request.json.get('mrz_size') if 'mrz_size' in request.json else default_mrz_size
 
-    mrz_chunks: list = extract_mrz(content, mrz_size=mrz_size, lines=lines, types=types)
-    mrz: str = ''.join(mrz_chunks)
+    mrz: str = ''.join(extract_mrz(content, mrz_size=mrz_size, lines=lines, types=types))
+    result = parse_mrz(mrz)
 
-    parsed_result = parse_mrz(mrz)
-
-    return jsonify(parsed_result.serialize())
+    return jsonify(result.serialize())
