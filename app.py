@@ -8,8 +8,8 @@ app = Flask(__name__)
 
 
 alphanumeric = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
-separator = "<"
-valid = alphanumeric + separator
+default_separator = "<"
+valid = alphanumeric + default_separator
 transliteration_substitutions = {
     '«': '<',
     'く': '<',
@@ -42,17 +42,17 @@ def format_iso_date(date: str) -> str:
     offset = 1 if current_year - (current_century * 100) < avg_lifespan else 0
 
     year: Union[str, int]
-    formatted = replace_all(date, alpha_to_numeric_substitutions)
+    sanitised_date = replace_all(date, alpha_to_numeric_substitutions)
 
     try:
-        year = int(formatted[:2])
+        year = int(sanitised_date[:2])
         century: int = current_century - offset if abs(100 - year) < year else current_century
-        year = str(century) + formatted[:2]
+        year = str(century) + sanitised_date[:2]
     except:
-        year = formatted[:2]
+        year = sanitised_date[:2]
 
-    month: str = formatted[2:4]
-    day: str = formatted[4:]
+    month: str = sanitised_date[2:4]
+    day: str = sanitised_date[4:]
 
     return '-'.join([year, month, day])
 
@@ -192,7 +192,7 @@ def extract_mrz(content: str, mrz_size: int, lines: int, types: List[str]) -> li
     chunk_size: int = int(mrz_size / lines)
     formatted: str = ''.join(content.split()).upper()
     preprocessed: str = preprocess_mrz(formatted, mrz_size, types)
-    processed: str = substitute(preprocessed, mrz_size, separator)
+    processed: str = substitute(preprocessed, mrz_size, default_separator)
 
     output: list = []
 
@@ -203,15 +203,15 @@ def extract_mrz(content: str, mrz_size: int, lines: int, types: List[str]) -> li
 
         while len(chunk) > 0:
             char: str = chunk[0]
-            if char == separator:
+            if char == default_separator:
                 chunk = chunk[1:]
             else:
                 break
 
         if chunk_size - len(chunk) > 0:
-            chunk: str = substitute(chunk, chunk_size, separator)
+            chunk: str = substitute(chunk, chunk_size, default_separator)
             difference: int = chunk_size - len(chunk)
-            chunk: str = (difference * separator) + chunk if difference > 0 else chunk
+            chunk: str = (difference * default_separator) + chunk if difference > 0 else chunk
 
         output.append(chunk)
 
@@ -222,8 +222,7 @@ def parse_mrz(mrz_str):
     mrz_str = process_text(mrz_str)
     td3_check = TD3CodeChecker(mrz_str)
     fields = td3_check.fields()
-    result = ParsedResult(fields)
-    return result
+    return ParsedResult(fields)
 
 
 # Allow CORS
@@ -237,7 +236,7 @@ def after_request(response):
 
 @app.route('/')
 def main():
-    return "mrz parser version 0.1"
+    return "MRZ parser version 1.0"
 
 
 @app.route('/api/passport', methods=['POST'])
