@@ -239,7 +239,7 @@ def main():
     return "MRZ parser version 1.0"
 
 
-default_document_types: List[str] = ["P<", "PA"]
+default_document_types: List[str] = ['P<'] + ['P' + char for char in alphanumeric]
 default_line_count: int = 2
 default_mrz_size: int = 88
 
