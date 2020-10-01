@@ -6,8 +6,9 @@ import datetime
 # Web services
 app = Flask(__name__)
 
-
-alphanumeric = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890"
+alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+numeric = "1234567890"
+alphanumeric = alpha + numeric
 default_separator = "<"
 valid = alphanumeric + default_separator
 transliteration_substitutions = {
@@ -211,7 +212,7 @@ def extract_mrz(content: str, mrz_size: int, lines: int, types: List[str]) -> li
         if chunk_size - len(chunk) > 0:
             chunk: str = substitute(chunk, chunk_size, default_separator)
             difference: int = chunk_size - len(chunk)
-            chunk: str = (difference * default_separator) + chunk if difference > 0 else chunk
+            chunk: str = chunk + (difference * default_separator) if difference > 0 else chunk
 
         output.append(chunk)
 
@@ -239,7 +240,7 @@ def main():
     return "MRZ parser version 1.0"
 
 
-default_document_types: List[str] = ['P<'] + ['P' + char for char in alphanumeric]
+default_document_types: List[str] = ['P<', 'P0'] + ['P' + char for char in alpha]
 default_line_count: int = 2
 default_mrz_size: int = 88
 
