@@ -1,12 +1,13 @@
+import datetime
+from typing import Optional, Union, List
+
+from flask import Flask, jsonify, request
+from mrz.base.countries_ops import is_code, get_country
 from mrz.checker.mrva import MRVACodeChecker
 from mrz.checker.mrvb import MRVBCodeChecker
 from mrz.checker.td1 import TD1CodeChecker
 from mrz.checker.td2 import TD2CodeChecker
-from mrz.checker.td3 import TD3CodeChecker, get_country
-from mrz.base.countries_ops import is_code, is_country, get_code, get_country
-from flask import Flask, jsonify, request
-from typing import Optional, Union, List
-import datetime
+from mrz.checker.td3 import TD3CodeChecker
 
 # Web services
 app_name: str = "MRZ Parser"
