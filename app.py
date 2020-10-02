@@ -9,7 +9,19 @@ from typing import Optional, Union, List
 import datetime
 
 # Web services
-app = Flask(__name__)
+app_name: str = "MRZ Parser"
+app_version: str = "2.0"
+app = Flask(app_name)
+
+
+def version() -> str:
+    return '%s version: %s' % (app_name, app_version)
+
+
+@app.route('/')
+def main():
+    return version()
+
 
 alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 numeric = "1234567890"
@@ -254,11 +266,6 @@ def after_request(response):
     response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
     response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
     return response
-
-
-@app.route('/')
-def main():
-    return "MRZ parser version 1.0"
 
 
 class MRZDefinition:
