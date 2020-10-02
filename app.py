@@ -1,3 +1,7 @@
+from mrz.checker.mrva import MRVACodeChecker
+from mrz.checker.mrvb import MRVBCodeChecker
+from mrz.checker.td1 import TD1CodeChecker
+from mrz.checker.td2 import TD2CodeChecker
 from mrz.checker.td3 import TD3CodeChecker, get_country
 from mrz.base.countries_ops import is_code, is_country, get_code, get_country
 from flask import Flask, jsonify, request
@@ -243,13 +247,6 @@ def extract_mrz(content: str, mrz_size: int, lines: int, types: List[str]) -> li
     return output
 
 
-def parse_mrz(mrz_str):
-    mrz_str = process_text(mrz_str)
-    td3_check = TD3CodeChecker(mrz_str)
-    fields = td3_check.fields()
-    return ParsedResult(fields)
-
-
 # Allow CORS
 @app.after_request
 def after_request(response):
@@ -264,20 +261,40 @@ def main():
     return "MRZ parser version 1.0"
 
 
-default_document_types: List[str] = ['P<', 'P0'] + ['P' + char for char in alpha]
-default_line_count: int = 2
-default_mrz_size: int = 88
+class MRZDefinition:
+    def __init__(self, size: int, lines: int, types: List[str], checker):
+        self.size = size
+        self.lines = lines
+        self.types = types
+        self.checker = checker
+
+
+default_implementation: str = 'TD3'
+empty_types: List[str] = []  # determine document types
+mrz_definitions: map = {
+    'TD1': MRZDefinition(90, 3, empty_types, TD1CodeChecker),
+    'TD2': MRZDefinition(72, 2, empty_types, TD2CodeChecker),
+    'TD3': MRZDefinition(88, 2, ['P<', 'P0'] + ['P' + char for char in alpha], TD3CodeChecker),
+    'MRVA': MRZDefinition(88, 2, empty_types, MRVACodeChecker),
+    'MRVB': MRZDefinition(72, 2, empty_types, MRVBCodeChecker)
+}
+
+
+def parse(implementation: MRZDefinition, machine_readable_zone: str) -> ParsedResult:
+    machine_readable_zone = process_text(machine_readable_zone)
+    checker = implementation.checker(machine_readable_zone)
+    fields = checker.fields()
+    return ParsedResult(fields)
 
 
 @app.route('/api/passport', methods=['POST'])
 def post_mrz():
+    identifier: str = request.json.get('implementation') if 'implementation' in request.json else default_implementation
+    identifier = identifier if identifier in mrz_definitions.keys() else default_implementation
+
     content: str = request.json.get('content')
-    types: List[str] = request.json.get('types') if 'types' in request.json else default_document_types
-    lines: int = request.json.get('lines') if 'lines' in request.json else default_line_count
-    mrz_size: int = request.json.get('mrz_size') if 'mrz_size' in request.json else default_mrz_size
+    impl: MRZDefinition = mrz_definitions.get(identifier)
+    mrz: str = ''.join(extract_mrz(content, mrz_size=impl.size, lines=impl.lines, types=impl.types))
+    result = parse(impl, mrz)
 
-    mrz: str = ''.join(extract_mrz(content, mrz_size=mrz_size, lines=lines, types=types))
-    result = parse_mrz(mrz)
-    json = jsonify(result.serialize())
-
-    return json
+    return jsonify(result.serialize())
