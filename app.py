@@ -1,4 +1,5 @@
 from mrz.checker.td3 import TD3CodeChecker, get_country
+from mrz.base.countries_ops import is_code, is_country, get_code, get_country
 from flask import Flask, jsonify, request
 from typing import Optional, Union, List
 import datetime
@@ -142,17 +143,23 @@ def substitute(value: str, size: int, substitution: str) -> str:
     return start + padding + end
 
 
-def preprocess_mrz(value: str, size: int, types: List[str]) -> str:
-    length: int = len(value)
-    offset: int = max(length - size, 0)
+def identify_mrz(value: str, offset: int, types: List[str], max_attempts: int) -> Optional[str]:
+    return identify_mrz_by_type_and_country_code(value, offset, types, max_attempts)
 
-    max_attempts: int = 8
+
+def identify_mrz_by_type_and_country_code(value: str, offset: int, types: List[str], max_attempts: int) -> Optional[str]:
     identified: bool = False
 
     for attempt in range(max_attempts):
-        index: int = offset - attempt
+        if identified:
+            break
 
-        if index < 0 or identified:
+        index: int = offset - (max_attempts - attempt)
+
+        if index < 0:
+            index = offset - attempt
+
+        if index < 0:
             break
 
         subset: str = value[index:]
@@ -163,17 +170,34 @@ def preprocess_mrz(value: str, size: int, types: List[str]) -> str:
 
             chars: str = replace_all(subset[i:], transliteration_substitutions)
 
-            for t in types:
+            for _type in types:
                 if identified:
                     break
-                if chars.startswith(t):
+
+                if not chars.startswith(_type):
+                    continue
+
+                type_length = len(_type)
+                country_length = 3
+                country_code = chars[type_length:type_length + country_length]
+
+                if is_code(country_code):
                     identified = True
                     offset = max(index + i, 0)
 
-    if not identified:
+    return value[offset:] if identified else None
+
+
+def preprocess_mrz(value: str, size: int, types: List[str]) -> str:
+    max_attempts: int = 8
+    length: int = len(value)
+    offset: int = max(length - size, 0)
+
+    subset = identify_mrz(value, offset, types, max_attempts)
+
+    if subset is None:
         return ""
 
-    subset: str = value[offset:]
     output: str = ""
 
     for index in range(len(subset)):
@@ -254,5 +278,6 @@ def post_mrz():
 
     mrz: str = ''.join(extract_mrz(content, mrz_size=mrz_size, lines=lines, types=types))
     result = parse_mrz(mrz)
+    json = jsonify(result.serialize())
 
-    return jsonify(result.serialize())
+    return json
