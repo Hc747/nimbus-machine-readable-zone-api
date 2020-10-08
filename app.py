@@ -3,6 +3,7 @@ from typing import Optional, Union, List
 
 from flask import Flask, jsonify, request
 from mrz.base.countries_ops import is_code, get_country
+from mrz.base.errors import FieldError
 from mrz.checker.mrva import MRVACodeChecker
 from mrz.checker.mrvb import MRVBCodeChecker
 from mrz.checker.td1 import TD1CodeChecker
@@ -295,14 +296,25 @@ def parse(implementation: MRZDefinition, machine_readable_zone: str) -> ParsedRe
     return ParsedResult(fields)
 
 
+unprocessable_entity = 422
+internal_server_error = 500
+
+
 @app.route('/api/passport', methods=['POST'])
 def post_mrz():
-    identifier: str = request.json.get('implementation') if 'implementation' in request.json else default_implementation
-    identifier = identifier if identifier in mrz_definitions.keys() else default_implementation
+    try:
+        identifier: str = request.json.get('implementation') if 'implementation' in request.json else default_implementation
+        identifier = identifier if identifier in mrz_definitions.keys() else default_implementation
 
-    content: str = request.json.get('content')
-    impl: MRZDefinition = mrz_definitions.get(identifier)
-    mrz: str = ''.join(extract_mrz(content, mrz_size=impl.size, lines=impl.lines, types=impl.types))
-    result = parse(impl, mrz)
+        content: str = request.json.get('content')
+        definition: MRZDefinition = mrz_definitions.get(identifier)
+        extracted: str = ''.join(extract_mrz(content, mrz_size=definition.size, lines=definition.lines, types=definition.types))
 
-    return jsonify(result.serialize())
+        result = parse(definition, extracted)
+        return jsonify(result.serialize())
+    except FieldError as e:
+        result = {'success': False, 'message': 'Exception: \'%s\', Cause: \'%s\'' % (e.msg, e.cause)}
+        return jsonify(result), unprocessable_entity
+    except:
+        result = {'success': False, 'message': 'Unable to process request.'}
+        return jsonify(result), internal_server_error
