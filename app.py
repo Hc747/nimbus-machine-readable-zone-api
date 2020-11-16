@@ -21,11 +21,11 @@ internal_server_error = 500
 default_implementation: str = 'TD3'
 empty_types: List[str] = []  # determine document types
 mrz_definitions: map = {
-    'TD1': MRZParser(90, 3, empty_types, TD1CodeChecker),
-    'TD2': MRZParser(72, 2, empty_types, TD2CodeChecker),
-    'TD3': MRZParser(88, 2, ['P<', 'P0'] + ['P' + char for char in alpha], TD3CodeChecker),
-    'MRVA': MRZParser(88, 2, empty_types, MRVACodeChecker),
-    'MRVB': MRZParser(72, 2, empty_types, MRVBCodeChecker)
+    'TD1': MRZParser(30, 3, empty_types, TD1CodeChecker),
+    'TD2': MRZParser(36, 2, empty_types, TD2CodeChecker),
+    'TD3': MRZParser(44, 2, ['P<', 'P0'] + ['P' + char for char in alpha], TD3CodeChecker),
+    'MRVA': MRZParser(44, 2, empty_types, MRVACodeChecker),
+    'MRVB': MRZParser(36, 2, empty_types, MRVBCodeChecker)
 }
 
 

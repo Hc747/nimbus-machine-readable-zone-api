@@ -41,11 +41,14 @@ _valid = alphanumeric + _default_separator
 
 # MRZ Definition class
 class MRZParser:
-    def __init__(self, size: int, lines: int, types: List[str], checker):
-        self.size = size
+    def __init__(self, line_size: int, lines: int, types: List[str], checker):
+        self.line_size = line_size
         self.lines = lines
         self.types = types
         self.checker = checker
+
+    def size(self) -> int:
+        return self.line_size * self.lines
 
     def __identify_mrz(self, value: str, offset: int, types: List[str], max_attempts: int) -> Optional[str]:
         return self.__identify_mrz_by_type_and_country_code(value, offset, types, max_attempts)
@@ -91,12 +94,12 @@ class MRZParser:
 
         return value[offset:] if identified else None
 
-    def __preprocess_mrz(self, value: str, size: int, types: List[str]) -> str:
+    def __preprocess_mrz(self, value: str) -> str:
         max_attempts: int = 8
         length: int = len(value)
-        offset: int = max(length - size, 0)
+        offset: int = max(length - self.size(), 0)
 
-        subset = self.__identify_mrz(value, offset, types, max_attempts)
+        subset = self.__identify_mrz(value, offset, self.types, max_attempts)
 
         if subset is None:
             return ""
@@ -114,17 +117,17 @@ class MRZParser:
 
         return output
 
-    def __extract_mrz(self, content: str, mrz_size: int, lines: int, types: List[str]) -> List[str]:
-        chunk_size: int = int(mrz_size / lines)
+    def __extract_mrz(self, content: str) -> List[str]:
+        mrz_size: int = self.size()
         formatted: str = ''.join(content.split()).upper()
-        preprocessed: str = self.__preprocess_mrz(formatted, mrz_size, types)
+        preprocessed: str = self.__preprocess_mrz(formatted)
         processed: str = substitute(preprocessed, mrz_size, _default_separator)
 
         output: list = []
 
-        for index in range(lines):
-            start: int = index * chunk_size
-            end: int = start + chunk_size
+        for index in range(self.lines):
+            start: int = index * self.line_size
+            end: int = start + self.line_size
             chunk: str = processed[start:end]
 
             while len(chunk) > 0:
@@ -134,9 +137,9 @@ class MRZParser:
                 else:
                     break
 
-            if chunk_size - len(chunk) > 0:
-                chunk: str = substitute(chunk, chunk_size, _default_separator)
-                difference: int = chunk_size - len(chunk)
+            if self.line_size - len(chunk) > 0:
+                chunk: str = substitute(chunk, self.line_size, _default_separator)
+                difference: int = self.line_size - len(chunk)
                 chunk: str = chunk + (difference * _default_separator) if difference > 0 else chunk
 
             output.append(chunk)
@@ -148,6 +151,6 @@ class MRZParser:
         return '\n'.join(chunks)
 
     def parse(self, content: str) -> ParsedResult:
-        chunks: List[str] = self.__extract_mrz(content, self.size, self.lines, self.types)
+        chunks: List[str] = self.__extract_mrz(content)
         zone: str = self.__format(chunks)
         return ParsedResult(self.checker(zone).fields())
