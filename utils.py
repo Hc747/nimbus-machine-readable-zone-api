@@ -37,67 +37,32 @@ class LCSResult:
         return None if (start is None or end is None) else end - start
 
     def valid(self) -> bool:
-        return self.value and self.size()
+        return self.value is not None and self.size() is not None
 
 
-# def longest_common_subsection(first: str, second: str) -> Optional[LCSResult]:
-#     a, b = len(first), len(second)
-#     answer: Optional[LCSResult] = None
-#
-#     for x in range(a):
-#         candidate: LCSResult = LCSResult(None, None, None)
-#         for y in range(b):
-#             index: int = x + y
-#             if index < a and first[index] == second[index]:
-#                 candidate.start = index if candidate.start is None else candidate.start
-#                 candidate.value = first[index] if candidate.value is None else candidate.value + first[index]
-#             else:
-#                 candidate.end = index
-#                 if candidate.valid():
-#                     answer = candidate if answer is None else max(candidate, answer, key=lambda v: v.size())
-#                 else:
-#                     break
-#
-#     if answer is not None and answer.end is None:
-#         answer.end = a
-#
-#     return answer
+def longest_common_subsection(first: str, second: str) -> Optional[LCSResult]:
+    a, b = len(first), len(second)
+    answer: Optional[LCSResult] = None
 
-_value = 'value'
-_start = 'start'
-_end = 'end'
-
-def longest_common_subsection(a: str, b: str) -> Optional[LCSResult]:
-    a_len, b_len = len(a), len(b)
-    answer: dict = {}
-
-    for x in range(a_len):
-        candidate: dict = {}
-        for y in range(b_len):
-            idx: int = x + y
-            if idx < a_len and a[idx] == b[idx]:
-                if _start not in candidate:
-                    candidate[_start] = idx
-
-                value: Optional[str] = candidate.get(_value, None)
-                candidate[_value] = a[idx] if value is None else value + a[idx]
+    for x in range(a):
+        candidate: LCSResult = LCSResult(None, None, None)
+        for y in range(b):
+            index: int = x + y
+            if index < a and first[index] == second[index]:
+                candidate.start = index if candidate.start is None else candidate.start
+                candidate.value = first[index] if candidate.value is None else candidate.value + first[index]
             else:
-                previous: Optional[str] = answer.get(_value, None)
-                current: Optional[str] = candidate.get(_value, None)
+                candidate.end = index
 
-                if (previous is None and current is not None) or (current is not None and len(current) > len(previous)):
-                    candidate[_end] = idx
-                    answer = candidate
+                if candidate.valid():
+                    answer = candidate if answer is None else max(candidate, answer, key=lambda v: v.size())
 
                 break
 
-    if len(answer) == 0:
-        return None
+    if answer is not None and answer.end is None:
+        answer.end = a
 
-    if _start in answer and _end not in answer:
-        answer[_end] = a_len
-
-    return LCSResult(answer[_start], answer[_end], answer[_value])
+    return answer
 
 
 def replace_all(string: str, dictionary: dict) -> str:
