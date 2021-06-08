@@ -15,8 +15,9 @@ app_name: str = "MRZ Parser"
 app_version: str = "2.0"
 app = Flask(app_name)
 
-unprocessable_entity = 422
-internal_server_error = 500
+http_status_ok: int = 200
+http_status_unprocessable_entity: int = 422
+http_status_internal_server_error: int = 500
 
 default_implementation: str = 'TD3'
 empty_types: List[str] = []  # determine document types
@@ -43,14 +44,12 @@ def parse_machine_readable_zone():
         content: str = request.json.get('content')
         parser: MRZParser = mrz_definitions.get(identifier)
         result = parser.parse(content)
-
-        return jsonify(result.serialize())
+        output, status = result.serialize(), http_status_ok
     except FieldError as e:
-        result = {'success': False, 'message': 'Exception: \'%s\', Cause: \'%s\'' % (e.msg, e.cause)}
-        return jsonify(result), unprocessable_entity
+        output, status = {'success': False, 'message': 'Exception: \'%s\', Cause: \'%s\'' % (e.msg, e.cause)}, http_status_unprocessable_entity
     except:
-        result = {'success': False, 'message': 'Unable to process request.'}
-        return jsonify(result), internal_server_error
+        output, status = {'success': False, 'message': 'Unable to process request.'}, http_status_internal_server_error
+    return jsonify(output), status
 
 
 # Allow CORS
