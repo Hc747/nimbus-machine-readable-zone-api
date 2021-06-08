@@ -3,48 +3,65 @@ from typing import Optional, Union
 
 
 class LCSResult:
-    def __init__(self, start: int, end: int, value: str):
+    def __init__(self, start: Optional[int], end: Optional[int], value: Optional[str]):
         self.start = start
         self.end = end
         self.value = value
 
+    @property
+    def start(self):
+        return self.__start
 
-_value = 'value'
-_start = 'start'
-_end = 'end'
+    @start.setter
+    def start(self, start):
+        self.__start = start
+
+    @property
+    def end(self):
+        return self.__end
+
+    @end.setter
+    def end(self, end):
+        self.__end = end
+
+    @property
+    def value(self):
+        return self.__value
+
+    @value.setter
+    def value(self, value):
+        self.__value = value
+
+    def size(self) -> Optional[int]:
+        start, end = self.start, self.end
+        return None if (start is None or end is None) else end - start
+
+    def valid(self) -> bool:
+        return self.value and self.size()
 
 
-def longest_common_subsection(a: str, b: str) -> Optional[LCSResult]:
-    a_len, b_len = len(a), len(b)
-    answer: dict = {}
+def longest_common_subsection(first: str, second: str) -> Optional[LCSResult]:
+    a, b = len(first), len(second)
+    answer: Optional[LCSResult] = None
 
-    for x in range(a_len):
-        match: dict = {}
-        for y in range(b_len):
-            idx: int = x + y
-            if idx < a_len and a[idx] == b[idx]:
-                if _start not in match:
-                    match[_start] = idx
-
-                value: Optional[str] = match.get(_value, None)
-                match[_value] = a[idx] if value is None else value + a[idx]
+    for x in range(a):
+        candidate: LCSResult = LCSResult(None, None, None)
+        for y in range(b):
+            index: int = x + y
+            if index < a and first[index] == second[index]:
+                candidate.start = index if candidate.start is None else candidate.start
+                candidate.value = first[index] if candidate.value is None else candidate.value + first[index]
             else:
-                previous: Optional[str] = answer.get(_value, None)
-                current: Optional[str] = match.get(_value, None)
+                candidate.end = index
+                if candidate.valid():
+                    answer = candidate if answer is None else max(candidate, answer, key=lambda v: v.size())
+                else:
+                    break
 
-                if (previous is None and current is not None) or (current is not None and len(current) > len(previous)):
-                    match[_end] = idx
-                    answer = match
+    if answer is not None and answer.end is None:
+        answer.end = a
 
-                break
-
-    if len(answer) == 0:
-        return None
-
-    if _start in answer and _end not in answer:
-        answer[_end] = a_len
-
-    return LCSResult(answer[_start], answer[_end], answer[_value])
+    return answer
 
 
 def replace_all(string: str, dictionary: dict) -> str:
