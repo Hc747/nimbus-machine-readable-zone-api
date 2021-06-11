@@ -1,2 +1,2 @@
-Flask
-mrz
+Flask~=2.0.1
+mrz~=0.6.2
