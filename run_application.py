@@ -1,17 +1,12 @@
-import os
-
 from app import app
-
-port = os.getenv("PORT")
-debug = os.getenv("DEBUG")
+from arguments import args
 
 if __name__ == '__main__':
-    _port = 80 if port is None else int(port)
-    _debug = False if debug is None else bool(debug)
+    print(f'Arguments: {args}')
     options = dict(
         host='0.0.0.0',
-        debug=_debug,
-        port=_port,
+        debug=args.debug,
+        port=args.port,
         threaded=True
     )
 
