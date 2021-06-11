@@ -8,7 +8,7 @@ location="${folder}/${deployment}"
 
 echo "Building: ${location}"
 
-ls *.{py,txt} | xargs zip $location
+ls *.{py,txt,sh} | xargs zip $location
 
 scp -i ~/.ssh/id_rsa $location hcole@ciri:deployments/nimbus/mrz/
 
